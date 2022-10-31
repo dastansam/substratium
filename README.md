@@ -1,21 +1,12 @@
-# Substrate Node Template
+# Substratium
 
-[![Try on playground](https://img.shields.io/badge/Playground-Node_Template-brightgreen?logo=Parity%20Substrate)](https://docs.substrate.io/playground/) [![Matrix](https://img.shields.io/matrix/substrate-technical:matrix.org)](https://matrix.to/#/#substrate-technical:matrix.org)
-
-A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
+Simple Substrate node that demonstrates writing custom pallet. It demonstrates core topics in pallet development: storage, hooks, unit tests and benchmarking.
 
 ## Getting Started
 
 Follow the steps below to get started with the Node Template, or get it up and running right from
 your browser in just a few clicks using
 the [Substrate Playground](https://docs.substrate.io/playground/) :hammer_and_wrench:
-
-### Using Nix
-
-Install [nix](https://nixos.org/) and optionally [direnv](https://github.com/direnv/direnv) and
-[lorri](https://github.com/nix-community/lorri) for a fully plug and play experience for setting up
-the development environment. To get all the correct dependencies activate direnv `direnv allow` and
-lorri `lorri shell`.
 
 ### Rust Setup
 
@@ -36,6 +27,53 @@ without launching it:
 
 ```sh
 cargo build --release
+```
+
+### Unit tests
+
+To run unit tests of all pallets, run:
+
+```bash
+cargo test --verbose --features runtime-benchmarks
+```
+
+To run pallet specific unit tests, run:
+
+```bash
+cargo test -p pallet-oracle
+```
+
+### Benchmarks
+
+Benchmarks are needed to make sure that you control how much resources your chain uses and also for generating weights for extrinsics.
+
+To generate benchmarks, you have to compile the node with a special feature `runtime-benchmarks`:
+
+```sh
+cargo build --release --features runtime-benchmarks
+```
+
+Then, when the node is compiled, run this following command to generate `weights.rs` file:
+
+```sh
+./target/release/node-template benchmark pallet \ 
+--chain dev \
+--pallet pallet-oracle \
+--extrinsic "*" \
+--execution wasm \
+--wasm-execution compiled \
+--output ./pallets/oracle/src/weights.rs \
+--template ./.maintain/frame-weight-template.hbs \
+--steps 100 \
+--repeat 100
+```
+
+### Clippy
+
+You can use clippy tool to check for code style and linting errors:
+
+```sh
+cargo +nightly clippy --all-targets --workspace --features runtime-benchmarks -- --deny warnings
 ```
 
 ### Embedded Docs
@@ -103,7 +141,6 @@ $ ls ./my-chain-state/chains/dev
 db keystore network
 ```
 
-
 ### Connect with Polkadot-JS Apps Front-end
 
 Once the node template is running locally, you can connect it with **Polkadot-JS Apps** front-end
@@ -111,77 +148,7 @@ to interact with your chain. [Click
 here](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944) connecting the Apps to your
 local node template.
 
-### Multi-Node Local Testnet
-
-If you want to see the multi-node consensus algorithm in action, refer to our
-[Simulate a network tutorial](https://docs.substrate.io/tutorials/get-started/simulate-network/).
-
-## Template Structure
-
-A Substrate project such as this consists of a number of components that are spread across a few
-directories.
-
-### Node
-
-A blockchain node is an application that allows users to participate in a blockchain network.
-Substrate-based blockchain nodes expose a number of capabilities:
-
-- Networking: Substrate nodes use the [`libp2p`](https://libp2p.io/) networking stack to allow the
-  nodes in the network to communicate with one another.
-- Consensus: Blockchains must have a way to come to
-  [consensus](https://docs.substrate.io/main-docs/fundamentals/consensus/) on the state of the
-  network. Substrate makes it possible to supply custom consensus engines and also ships with
-  several consensus mechanisms that have been built on top of
-  [Web3 Foundation research](https://research.web3.foundation/en/latest/polkadot/NPoS/index.html).
-- RPC Server: A remote procedure call (RPC) server is used to interact with Substrate nodes.
-
-There are several files in the `node` directory - take special note of the following:
-
-- [`chain_spec.rs`](./node/src/chain_spec.rs): A
-  [chain specification](https://docs.substrate.io/main-docs/build/chain-spec/) is a
-  source code file that defines a Substrate chain's initial (genesis) state. Chain specifications
-  are useful for development and testing, and critical when architecting the launch of a
-  production chain. Take note of the `development_config` and `testnet_genesis` functions, which
-  are used to define the genesis state for the local development chain configuration. These
-  functions identify some
-  [well-known accounts](https://docs.substrate.io/reference/command-line-tools/subkey/)
-  and use them to configure the blockchain's initial state.
-- [`service.rs`](./node/src/service.rs): This file defines the node implementation. Take note of
-  the libraries that this file imports and the names of the functions it invokes. In particular,
-  there are references to consensus-related topics, such as the
-  [block finalization and forks](https://docs.substrate.io/main-docs/fundamentals/consensus/#finalization-and-forks)
-  and other [consensus mechanisms](https://docs.substrate.io/main-docs/fundamentals/consensus/#default-consensus-models)
-  such as Aura for block authoring and GRANDPA for finality.
-
-After the node has been [built](#build), refer to the embedded documentation to learn more about the
-capabilities and configuration parameters that it exposes:
-
-```shell
-./target/release/node-template --help
-```
-
-### Runtime
-
-In Substrate, the terms
-"runtime" and "state transition function"
-are analogous - they refer to the core logic of the blockchain that is responsible for validating
-blocks and executing the state changes they define. The Substrate project in this repository uses
-[FRAME](https://docs.substrate.io/main-docs/fundamentals/runtime-intro/#frame) to construct a
-blockchain runtime. FRAME allows runtime developers to declare domain-specific logic in modules
-called "pallets". At the heart of FRAME is a helpful
-[macro language](https://docs.substrate.io/reference/frame-macros/) that makes it easy to
-create pallets and flexibly compose them to create blockchains that can address
-[a variety of needs](https://substrate.io/ecosystem/projects/).
-
-Review the [FRAME runtime implementation](./runtime/src/lib.rs) included in this template and note
-the following:
-
-- This file configures several pallets to include in the runtime. Each pallet configuration is
-  defined by a code block that begins with `impl $PALLET_NAME::Config for Runtime`.
-- The pallets are composed into a single runtime by way of the
-  [`construct_runtime!`](https://crates.parity.io/frame_support/macro.construct_runtime.html)
-  macro, which is part of the core
-  FRAME Support [system](https://docs.substrate.io/reference/frame-pallets/#system-pallets) library.
+## Pallet Structure
 
 ### Pallets
 

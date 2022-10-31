@@ -6,9 +6,12 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_benchmarking::{list_benchmark, add_benchmark};
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
+use codec::{Encode, Decode};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -24,6 +27,7 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use primitives::{BlockNumber, HOURS, SLOT_DURATION};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -45,11 +49,8 @@ use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-/// Import the template pallet.
-pub use pallet_template;
-
-/// An index to a block.
-pub type BlockNumber = u32;
+/// Import the oracle pallet.
+pub use pallet_oracle;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
@@ -109,23 +110,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 1,
 	state_version: 1,
 };
-
-/// This determines the average expected block time that we are targeting.
-/// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
-/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
-///
-/// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
-// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-//       Attempting to do so will brick block production.
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-// Time is measured by number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -270,9 +254,26 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
+parameter_types! {
+	/// The maximum age of event in blocks. 1 hour in our case.
+	pub const MaxEventAge: BlockNumber = HOURS as BlockNumber;
+	/// The maximum number of events that can be stored in a feed.
+	/// It is used to bound the storage requirements of the pallet.
+	#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+	pub const MaxEventsInFeed: u32 = HOURS * 2;
+	/// The maximum length of an event value in bytes.
+	#[derive(Debug, PartialEq, Eq, Clone, TypeInfo, Encode, Decode)]
+	pub const MaxEventBytes: u32 = 65536; // 64 KiB
+}
+
+/// Configure the pallet-oracle in pallets/oracle.
+impl pallet_oracle::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type FeedOrigin = frame_system::EnsureRoot<AccountId>;
+	type WeightInfo = pallet_oracle::weights::SubstrateWeight<Runtime>;
+	type MaxEventAge = MaxEventAge;
+	type MaxEventsInFeed = MaxEventsInFeed;
+	type MaxEventBytes = MaxEventBytes;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -291,8 +292,8 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template,
+		// Include the custom logic from the pallet-oracle in the runtime.
+		Oracle: pallet_oracle,
 	}
 );
 
@@ -339,7 +340,7 @@ mod benches {
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
-		[pallet_template, TemplateModule]
+		[pallet_template, Oracle]
 	);
 }
 
@@ -504,6 +505,7 @@ impl_runtime_apis! {
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
+			list_benchmark!(list, extra, pallet_oracle, Oracle);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -527,6 +529,7 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 			add_benchmarks!(params, batches);
+			add_benchmark!(params, batches, pallet_oracle, Oracle);
 
 			Ok(batches)
 		}

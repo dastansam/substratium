@@ -1,5 +1,5 @@
 [package]
-name = "pallet-template"
+name = "pallet-oracle"
 version = "4.0.0-dev"
 description = "FRAME pallet template for defining custom runtime logic."
 authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
@@ -20,11 +20,16 @@ scale-info = { version = "2.1.1", default-features = false, features = ["derive"
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+
 
 [dev-dependencies]
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-keyring = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+# local dependencies
+primitives = { path = "../../primitives", default-features = false }
 
 [features]
 default = ["std"]
@@ -33,6 +38,7 @@ std = [
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
+	"sp-std/std",
 	"scale-info/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]

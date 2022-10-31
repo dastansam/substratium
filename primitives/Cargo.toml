@@ -1,0 +1,13 @@
+[package]
+name = "primitives"
+version = "1.0.0"
+authors = ["Dastanbek Samatov"]
+edition = "2021"
+description = "Contains primitives and constants of the project"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lib]
+name = "primitives"
+path = "src/lib.rs"
