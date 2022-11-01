@@ -36,12 +36,12 @@ jobs:
 
       - name: Check Build
         run: |
-          SKIP_WASM_BUILD=1 cargo check --release
+          SKIP_WASM_BUILD=1 cargo build --release
 
       - name: Check Build for Benchmarking
         run: >
           pushd node &&
-          cargo check --features=runtime-benchmarks --release
+          cargo build --features=runtime-benchmarks --release
       
       - name: Run unit tests
         run: cargo test --verbose
